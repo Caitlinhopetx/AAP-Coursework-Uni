@@ -152,9 +152,15 @@ void MsutilityAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuff
     // the samples and the outer loop is handling the channels.
     // Alternatively, you can process the samples with the channels
     // interleaved by keeping the same state.
-    for (int channel = 0; channel < totalNumInputChannels; ++channel)
+    
+    auto* audioLeft = buffer.getWritePointer (0);
+    auto* audioRight = buffer.getWritePointer (1);
+    
+    for (int i = 0; i < buffer.getNumSamples(); ++i)
     {
-        auto* channelData = buffer.getWritePointer (channel);
+        
+        
+        // ADD ALL YOUR ENCODING/DECODING EQUATIONS HERE
 
         // ..do something to the data...
     }
