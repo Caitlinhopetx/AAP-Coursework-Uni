@@ -24,6 +24,8 @@ MsutilityAudioProcessor::MsutilityAudioProcessor()
                        )
 #endif
 {
+    
+    // ADD PARAMETERS HERE :)
 }
 
 MsutilityAudioProcessor::~MsutilityAudioProcessor()
@@ -166,7 +168,7 @@ bool MsutilityAudioProcessor::hasEditor() const
 
 AudioProcessorEditor* MsutilityAudioProcessor::createEditor()
 {
-    return new MsutilityAudioProcessorEditor (*this);
+    return new GenericAudioProcessorEditor (this);
 }
 
 //==============================================================================
