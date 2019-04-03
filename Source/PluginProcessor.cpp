@@ -25,7 +25,20 @@ MsutilityAudioProcessor::MsutilityAudioProcessor()
 #endif
 {
     
-    // ADD PARAMETERS HERE :)
+    // ADD PARAMETERS HERE 
+    
+    //stereo width perameter
+    stereowidth = new AudioParameterFloat ("stereowidth", "stereo width", 0.0f, 2.0f, 1.0f);
+    addParameter(stereowidth);
+    
+//input selection
+    InputSelection = new AudioParameterChoice ("InputSelection", "Input", {"stereo", "Mid-Side"}, 1);
+    addParameter(InputSelection);
+    
+    //Output selection
+
+    OutputSelection = new AudioParameterChoice ("OutputSelection", "Output", { "stereo", "Mid-Side" }, 1);
+    addParameter(OutputSelection);
 }
 
 MsutilityAudioProcessor::~MsutilityAudioProcessor()
@@ -155,16 +168,23 @@ void MsutilityAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuff
     
     auto* audioLeft = buffer.getWritePointer (0);
     auto* audioRight = buffer.getWritePointer (1);
+
     
     for (int i = 0; i < buffer.getNumSamples(); ++i)
     {
+        auto inLeft = audioLeft[i];
+        auto inRight = audioRight[i];
+    
+        auto side = 0.5 * (inLeft - inRight);
+        auto mid = 0.5 * (inLeft + inRight);
+    }
+    
         
         
         // ADD ALL YOUR ENCODING/DECODING EQUATIONS HERE
 
         // ..do something to the data...
     }
-}
 
 //==============================================================================
 bool MsutilityAudioProcessor::hasEditor() const
