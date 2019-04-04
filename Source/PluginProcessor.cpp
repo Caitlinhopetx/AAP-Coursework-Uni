@@ -25,9 +25,9 @@ MsutilityAudioProcessor::MsutilityAudioProcessor()
 #endif
 {
     
-    // ADD PARAMETERS HERE 
+    //PARAMETERS HERE
     
-    //stereo width perameter
+//stereo width perameter
     stereowidth = new AudioParameterFloat ("stereowidth", "stereo width", 0.0f, 2.0f, 1.0f);
     addParameter(stereowidth);
     
@@ -35,12 +35,10 @@ MsutilityAudioProcessor::MsutilityAudioProcessor()
     InputSelection = new AudioParameterChoice ("InputSelection", "Input", {"stereo", "Mid-Side"}, 1);
     addParameter(InputSelection);
     
-    //Output selection
-
+//Output selection
     OutputSelection = new AudioParameterChoice ("OutputSelection", "Output", { "stereo", "Mid-Side" }, 1);
     addParameter(OutputSelection);
 }
-
 MsutilityAudioProcessor::~MsutilityAudioProcessor()
 {
 }
@@ -166,26 +164,44 @@ void MsutilityAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuff
     // Alternatively, you can process the samples with the channels
     // interleaved by keeping the same state.
     
+    //Retreving audio from channels
     auto* audioLeft = buffer.getWritePointer (0);
     auto* audioRight = buffer.getWritePointer (1);
-
     
+    //retreving value from plug-in
+    auto InputChoice = InputSelection->getIndex();
+    auto OutputChoice = OutputSelection->getIndex();
+    
+    //receiving sample num from buffer
     for (int i = 0; i < buffer.getNumSamples(); ++i)
     {
+        
+      
+        
         auto inLeft = audioLeft[i];
         auto inRight = audioRight[i];
-    
-        auto side = 0.5 * (inLeft - inRight);
-        auto mid = 0.5 * (inLeft + inRight);
-    }
-    
+    //ENCODING EQUATIONS HERE
+        //encoding mid side
+        if (InputChoice == 0 && OutputChoice == 1)
+            
+        {
+            auto side = 0.5f * (audioLeft[i] - audioRight[i]);
+            auto mid = 0.5f * (audioLeft[i] + audioRight[i]);
+            
+         }
+        //DECODING EQUATIONS HERE
+        //decoding midside
+        else if (InputChoice == 1 && OutputChoice == 0){
         
+    //left = mid+side right = mid-side
         
-        // ADD ALL YOUR ENCODING/DECODING EQUATIONS HERE
+    
+            }
 
-        // ..do something to the data...
-    }
+}
+}        // ..do something to the data...
 
+    
 //==============================================================================
 bool MsutilityAudioProcessor::hasEditor() const
 {
@@ -203,12 +219,27 @@ void MsutilityAudioProcessor::getStateInformation (MemoryBlock& destData)
     // You should use this method to store your parameters in the memory block.
     // You could do that either as raw data, or use the XML or ValueTree classes
     // as intermediaries to make it easy to save and load complex data.
-}
 
+    MemoryOutputStream stream(destData, true);
+    stream.writeFloat (*stereowidth);
+    stream.writeInt (*InputSelection);
+    stream.writeInt (*OutputSelection);
+    
+
+}
 void MsutilityAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
 {
     // You should use this method to restore your parameters from this memory block,
     // whose contents will have been created by the getStateInformation() call.
+   
+    //retreving infromation from memory
+    MemoryInputStream stream(data, static_cast<size_t>(sizeInBytes), false);
+    
+    //outputting information
+    stereowidth-> setValueNotifyingHost(stream.readFloat());
+    InputSelection->  setValueNotifyingHost(stream.readInt());
+    OutputSelection-> setValueNotifyingHost(stream.readInt());
+    
 }
 
 //==============================================================================
