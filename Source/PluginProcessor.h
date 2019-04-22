@@ -55,6 +55,9 @@ public:
     void getStateInformation (MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
 
+    float panPosition;
+    
+    
 private:
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MsutilityAudioProcessor)
@@ -63,7 +66,12 @@ private:
     AudioParameterChoice* InputSelection;
     AudioParameterChoice* OutputSelection;
     AudioSampleBuffer delayBuffer;
+    AudioParameterFloat* gainslider;
+    AudioParameterFloat* left_chan_pan;
+    AudioParameterFloat* right_chan_pan; 
+    
     int delayBufferTime = 0;
-    int inforead =0;
-    int infowrite =0; 
+    int inforead = 0;
+    int infowrite = 0;
+    float previousGain;
 };

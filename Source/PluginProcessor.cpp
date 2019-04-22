@@ -38,6 +38,19 @@ MsutilityAudioProcessor::MsutilityAudioProcessor()
 //Output selection
     OutputSelection = new AudioParameterChoice ("OutputSelection", "Output", { "stereo", "Mid-Side" }, 1);
     addParameter(OutputSelection);
+    
+    //advanced task gain slider
+    gainslider = new AudioParameterFloat ("gainslider", "Gain", 0.0f, 1.0f, 0.5f);
+    addParameter(gainslider);
+    
+    //adnaved task Panner
+    
+    left_chan_pan = new AudioParameterFloat ("left_chan_pan", "PanLeft",-1.0f, 1.0f, 0.0f);
+    addParameter(left_chan_pan);
+    
+    right_chan_pan = new AudioParameterFloat ("right_chan_pan", "PanRight", -1.0f, 1.0f, 0.0f);
+    addParameter(right_chan_pan);
+    
 }
 MsutilityAudioProcessor::~MsutilityAudioProcessor()
 {
@@ -111,7 +124,7 @@ void MsutilityAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBl
     // Use this method as the place to do any pre-playback
     // initialisation that you need..
     
-    delayBufferTime - (int)(sampleRate);
+    delayBufferTime = (int)(sampleRate);
     
     delayBuffer.setSize(1, delayBufferTime);
     
@@ -155,9 +168,27 @@ bool MsutilityAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts
 
 void MsutilityAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer& midiMessages)
 {
+    // gain slider
+    buffer.applyGain(*gainslider);
+    
     ScopedNoDenormals noDenormals;
     auto totalNumInputChannels  = getTotalNumInputChannels();
     auto totalNumOutputChannels = getTotalNumOutputChannels();
+    auto currentGain = gainslider-> get();
+    if ( currentGain == previousGain){
+        buffer.applyGain(currentGain);
+        
+    }
+    else {
+        buffer.applyGainRamp(0, buffer.getNumSamples(), previousGain, currentGain);
+        
+        previousGain = currentGain;
+        
+        // resorce https://docs.juce.com/master/tutorial_audio_parameter.html?fbclid=IwAR3CXQ7iZvz3yseuiP-b4wAgMIN3AGD9WSMTSb2BxkvFawKKWCc-mHw9WQM
+        
+        
+        
+    }
 
     // In case we have more outputs than inputs, this code clears any output
     // channels that didn't contain input data, (because these aren't
@@ -188,10 +219,15 @@ void MsutilityAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuff
         auto InputChoice = InputSelection->getIndex();
         auto OutputChoice = OutputSelection->getIndex();
         auto controlwidth = stereowidth->get();
+        auto LeftPan = left_chan_pan->get();
+        auto RightPan = right_chan_pan->get();
+        
+        float pDash = (LeftPan + 1.0) / 2.0;
+        float pDash2 = (RightPan + 1.0) / 2.0;
       
-    
+
         //encoding mid side
-        if (InputChoice == 0 && OutputChoice == 1)
+        if (InputChoice == 1 && OutputChoice == 2)
         {
             auto side = 0.5f * (audioLeft[i] - audioRight[i]);
             auto mid = 0.5f * (audioLeft[i] + audioRight[i]);
@@ -199,10 +235,11 @@ void MsutilityAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuff
             audioLeft[i] = mid;
             audioRight[i] = side;
          }
+        
         //DECODING EQUATIONS HERE
         //decoding midside
         
-        else if (InputChoice == 1 && OutputChoice == 0)
+        else if (InputChoice == 2 && OutputChoice == 1)
         {
             
           float midtoleft = (audioLeft[i] + audioRight[i]);
@@ -218,9 +255,24 @@ void MsutilityAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuff
         
         audioLeft[i] = wideleft + wideright;
         audioRight[i] = wideleft - wideright;
-    }
         
-}        // ..do something to the data...
+         //panner
+
+    
+        
+        float panLeft = audioLeft[i] * (1.0 - pDash);
+        audioLeft[i] = panLeft;
+        
+        float panRight = audioRight[i] * pDash2;
+        audioRight[i] = panRight;
+      
+    
+    
+    
+    
+    } //phase/ polarity shift
+        
+}
 
     
 //==============================================================================
@@ -245,6 +297,7 @@ void MsutilityAudioProcessor::getStateInformation (MemoryBlock& destData)
     stream.writeFloat (*stereowidth);
     stream.writeInt (*InputSelection);
     stream.writeInt (*OutputSelection);
+    stream.writeFloat (*gainslider);
     
 
 }
@@ -260,6 +313,7 @@ void MsutilityAudioProcessor::setStateInformation (const void* data, int sizeInB
     stereowidth->setValueNotifyingHost(stereowidth->getNormalisableRange().convertTo0to1(stream.readFloat()));
     InputSelection->  setValueNotifyingHost(stream.readInt());
     OutputSelection-> setValueNotifyingHost(stream.readInt());
+    gainslider->setValueNotifyingHost(stream.readFloat());
     
 }
 
@@ -269,3 +323,5 @@ AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 {
     return new MsutilityAudioProcessor();
 }
+
+
