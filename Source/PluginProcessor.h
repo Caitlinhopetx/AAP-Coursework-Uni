@@ -62,4 +62,8 @@ private:
     AudioParameterFloat* stereowidth;
     AudioParameterChoice* InputSelection;
     AudioParameterChoice* OutputSelection;
+    AudioSampleBuffer delayBuffer;
+    int delayBufferTime = 0;
+    int inforead =0;
+    int infowrite =0; 
 };

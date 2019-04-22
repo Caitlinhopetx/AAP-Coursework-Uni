@@ -110,6 +110,17 @@ void MsutilityAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBl
 {
     // Use this method as the place to do any pre-playback
     // initialisation that you need..
+    
+    delayBufferTime - (int)(sampleRate);
+    
+    delayBuffer.setSize(1, delayBufferTime);
+    
+    delayBuffer.clear();
+    
+    inforead = (int)(infowrite - (stereowidth->get() * getSampleRate())
+                     + delayBufferTime) % delayBufferTime;
+    
+    
 }
 
 void MsutilityAudioProcessor::releaseResources()
@@ -164,41 +175,51 @@ void MsutilityAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuff
     // Alternatively, you can process the samples with the channels
     // interleaved by keeping the same state.
     
-    //Retreving audio from channels
-    auto* audioLeft = buffer.getWritePointer (0);
-    auto* audioRight = buffer.getWritePointer (1);
-    
-    //retreving value from plug-in
-    auto InputChoice = InputSelection->getIndex();
-    auto OutputChoice = OutputSelection->getIndex();
+   
     
     //receiving sample num from buffer
     for (int i = 0; i < buffer.getNumSamples(); ++i)
     {
+        //Retreving audio from channels
+        auto* audioLeft = buffer.getWritePointer (0);
+        auto* audioRight = buffer.getWritePointer (1);
         
+        //retreving value from plug-in
+        auto InputChoice = InputSelection->getIndex();
+        auto OutputChoice = OutputSelection->getIndex();
+        auto controlwidth = stereowidth->get();
       
-        
-        auto inLeft = audioLeft[i];
-        auto inRight = audioRight[i];
-    //ENCODING EQUATIONS HERE
+    
         //encoding mid side
         if (InputChoice == 0 && OutputChoice == 1)
-            
         {
             auto side = 0.5f * (audioLeft[i] - audioRight[i]);
             auto mid = 0.5f * (audioLeft[i] + audioRight[i]);
             
+            audioLeft[i] = mid;
+            audioRight[i] = side;
          }
         //DECODING EQUATIONS HERE
         //decoding midside
-        else if (InputChoice == 1 && OutputChoice == 0){
         
-    //left = mid+side right = mid-side
-        
+        else if (InputChoice == 1 && OutputChoice == 0)
+        {
+            
+          float midtoleft = (audioLeft[i] + audioRight[i]);
+          float sideright = (audioLeft[i] - audioRight[i]);
+            
+          audioLeft[i] = midtoleft;
+          audioRight[i] = sideright;
     
-            }
-
-}
+        }
+        
+        float wideright = (controlwidth) * (audioLeft[i] - audioRight[i]);
+        float wideleft = (2 - controlwidth) * (audioRight[i] + audioLeft[i]);
+        
+        audioLeft[i] = wideleft + wideright;
+        audioRight[i] = wideleft - wideright;
+    }
+        
 }        // ..do something to the data...
 
     
@@ -236,7 +257,7 @@ void MsutilityAudioProcessor::setStateInformation (const void* data, int sizeInB
     MemoryInputStream stream(data, static_cast<size_t>(sizeInBytes), false);
     
     //outputting information
-    stereowidth-> setValueNotifyingHost(stream.readFloat());
+    stereowidth->setValueNotifyingHost(stereowidth->getNormalisableRange().convertTo0to1(stream.readFloat()));
     InputSelection->  setValueNotifyingHost(stream.readInt());
     OutputSelection-> setValueNotifyingHost(stream.readInt());
     
