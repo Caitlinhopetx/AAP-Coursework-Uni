@@ -27,9 +27,8 @@ MsutilityAudioProcessor::MsutilityAudioProcessor()
     
     //PARAMETERS HERE
     
-//stereo width perameter
-    stereowidth = new AudioParameterFloat ("stereowidth", "stereo width", 0.0f, 2.0f, 1.0f);
-    addParameter(stereowidth);
+    
+
     
 //input selection
     InputSelection = new AudioParameterChoice ("InputSelection", "Input", {"stereo", "Mid-Side"}, 1);
@@ -39,17 +38,32 @@ MsutilityAudioProcessor::MsutilityAudioProcessor()
     OutputSelection = new AudioParameterChoice ("OutputSelection", "Output", { "stereo", "Mid-Side" }, 1);
     addParameter(OutputSelection);
     
+    
+    //  following perameters of type float. the arguments within the brackets are as follows: 1. perameter name 2. name shown on plugin, 3. minimum level 4. max level 5. defult level
+    
     //advanced task gain slider
     gainslider = new AudioParameterFloat ("gainslider", "Gain", 0.0f, 1.0f, 0.5f);
     addParameter(gainslider);
     
-    //adnaved task Panner
-    
-    left_chan_pan = new AudioParameterFloat ("left_chan_pan", "PanLeft",-1.0f, 1.0f, 0.0f);
+    //advanced task Panner
+    left_chan_pan = new AudioParameterFloat ("left_chan_pan", "PanLeft", -1.0f, 1.0f, 0.0f);
     addParameter(left_chan_pan);
     
     right_chan_pan = new AudioParameterFloat ("right_chan_pan", "PanRight", -1.0f, 1.0f, 0.0f);
     addParameter(right_chan_pan);
+    
+    //stereo width perameter
+    stereowidth = new AudioParameterFloat ("stereowidth", "stereo width", 0.0f, 2.0f, 1.0f);
+    addParameter(stereowidth);
+    
+    //advanced task polarity flip
+    polarityleft = new AudioParameterBool ("polarityleft", "Inverse Polarity Left", 0);
+    addParameter(polarityleft);
+
+    polarityright = new AudioParameterBool("polarityright", "Inverse Polarity Right", 0);
+    addParameter(polarityright);
+    
+
     
 }
 MsutilityAudioProcessor::~MsutilityAudioProcessor()
@@ -124,15 +138,7 @@ void MsutilityAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBl
     // Use this method as the place to do any pre-playback
     // initialisation that you need..
     
-    delayBufferTime = (int)(sampleRate);
-    
-    delayBuffer.setSize(1, delayBufferTime);
-    
-    delayBuffer.clear();
-    
-    inforead = (int)(infowrite - (stereowidth->get() * getSampleRate())
-                     + delayBufferTime) % delayBufferTime;
-    
+   
     
 }
 
@@ -168,14 +174,15 @@ bool MsutilityAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts
 
 void MsutilityAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer& midiMessages)
 {
+    
     // gain slider
     buffer.applyGain(*gainslider);
     
     ScopedNoDenormals noDenormals;
     auto totalNumInputChannels  = getTotalNumInputChannels();
     auto totalNumOutputChannels = getTotalNumOutputChannels();
-    auto currentGain = gainslider-> get();
-    if ( currentGain == previousGain){
+    auto currentGain = gainslider-> get();// retrevig gain value from plug in
+    if ( currentGain == previousGain){// if statement to check current gain value matches previous value
         buffer.applyGain(currentGain);
         
     }
@@ -212,28 +219,33 @@ void MsutilityAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuff
     for (int i = 0; i < buffer.getNumSamples(); ++i)
     {
         //Retreving audio from channels
+        
         auto* audioLeft = buffer.getWritePointer (0);
         auto* audioRight = buffer.getWritePointer (1);
         
         //retreving value from plug-in
+
         auto InputChoice = InputSelection->getIndex();
         auto OutputChoice = OutputSelection->getIndex();
         auto controlwidth = stereowidth->get();
         auto LeftPan = left_chan_pan->get();
         auto RightPan = right_chan_pan->get();
+        int getPolarityleft = polarityleft->get();
+        int getPolarityright = polarityright->get();
         
         float pDash = (LeftPan + 1.0) / 2.0;
         float pDash2 = (RightPan + 1.0) / 2.0;
       
 
         //encoding mid side
+        
         if (InputChoice == 1 && OutputChoice == 2)
         {
             auto side = 0.5f * (audioLeft[i] - audioRight[i]);
             auto mid = 0.5f * (audioLeft[i] + audioRight[i]);
             
             audioLeft[i] = mid;
-            audioRight[i] = side;
+            audioRight[i] = side; // Overwriting audio data with side data
          }
         
         //DECODING EQUATIONS HERE
@@ -246,7 +258,7 @@ void MsutilityAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuff
           float sideright = (audioLeft[i] - audioRight[i]);
             
           audioLeft[i] = midtoleft;
-          audioRight[i] = sideright;
+          audioRight[i] = sideright; // Overwriting audio data with side data
     
         }
         
@@ -254,25 +266,37 @@ void MsutilityAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuff
         float wideleft = (2 - controlwidth) * (audioRight[i] + audioLeft[i]);
         
         audioLeft[i] = wideleft + wideright;
-        audioRight[i] = wideleft - wideright;
+        audioRight[i] = wideleft - wideright; // Overwriting audio data with wide data
         
          //panner
-
-    
         
         float panLeft = audioLeft[i] * (1.0 - pDash);
-        audioLeft[i] = panLeft;
+        audioLeft[i] = panLeft; // Overwriting audio data with pan data
         
-        float panRight = audioRight[i] * pDash2;
-        audioRight[i] = panRight;
+        float panRight = audioRight[i] * (1.0 - pDash2);
+        audioRight[i] = panRight; // Overwriting audio data with pan data
       
-    
-    
-    
-    
-    } //phase/ polarity shift
+       
+            
+        //phase/ polarity shift
+        if (getPolarityleft == 1)
+        {
+            float polarityflipL = audioLeft[i] * -1; // flips left audio polarity by multiplying the amplitude by -1
+            audioLeft[i] = polarityflipL; // Overwriting audio data with polarity data
+            
+        }
         
-}
+        if (getPolarityright == 1)
+        {
+            
+            float polarityflipR = audioRight[i] * -1; // flips right audio polarity by multiplying the amplitude by -1
+            audioRight[i] = polarityflipR; // Overwriting audio data with polarity data
+        }
+        
+     
+        
+                }
+            }
 
     
 //==============================================================================
@@ -293,11 +317,19 @@ void MsutilityAudioProcessor::getStateInformation (MemoryBlock& destData)
     // You could do that either as raw data, or use the XML or ValueTree classes
     // as intermediaries to make it easy to save and load complex data.
 
+    
+    // writing perameter data to memory for preset usage in plugin
+    
     MemoryOutputStream stream(destData, true);
     stream.writeFloat (*stereowidth);
     stream.writeInt (*InputSelection);
     stream.writeInt (*OutputSelection);
     stream.writeFloat (*gainslider);
+    stream.writeFloat(*left_chan_pan);
+    stream.writeFloat(*right_chan_pan);
+    stream.writeBool(*polarityleft);
+    stream.writeBool(*polarityright);
+    
     
 
 }
@@ -309,11 +341,18 @@ void MsutilityAudioProcessor::setStateInformation (const void* data, int sizeInB
     //retreving infromation from memory
     MemoryInputStream stream(data, static_cast<size_t>(sizeInBytes), false);
     
-    //outputting information
-    stereowidth->setValueNotifyingHost(stereowidth->getNormalisableRange().convertTo0to1(stream.readFloat()));
+    //outputting information to plug in
+    
+    stereowidth->setValueNotifyingHost(stereowidth->getNormalisableRange().convertTo0to1(stream.readFloat())); // converting data above float value of 1 to a range of 0-1 so information can be used by plugin.
+    
     InputSelection->  setValueNotifyingHost(stream.readInt());
     OutputSelection-> setValueNotifyingHost(stream.readInt());
     gainslider->setValueNotifyingHost(stream.readFloat());
+    left_chan_pan->setValueNotifyingHost(left_chan_pan->getNormalisableRange().convertTo0to1(stream.readFloat()));// converting data above float value of 1 to a range of 0-1 so
+    right_chan_pan->setValueNotifyingHost(right_chan_pan->getNormalisableRange().convertTo0to1(stream.readFloat()));// converting data above float value of 1 to a range of 0-1 so
+    polarityleft->setValueNotifyingHost(stream.readBool());
+    polarityright->setValueNotifyingHost(stream.readBool());
+   
     
 }
 
