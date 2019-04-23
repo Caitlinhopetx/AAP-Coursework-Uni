@@ -69,11 +69,9 @@ private:
     AudioParameterFloat* gainslider;
     AudioParameterFloat* left_chan_pan;
     AudioParameterFloat* right_chan_pan;
-    AudioParameterFloat* thresholdL;
-    AudioParameterFloat* thresholdR;
     AudioParameterBool* polarityleft;
     AudioParameterBool* polarityright;
-    AudioParameterFloat* threshold;
+   
     
     
     int delayBufferTime = 0;

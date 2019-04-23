@@ -349,7 +349,9 @@ void MsutilityAudioProcessor::setStateInformation (const void* data, int sizeInB
     OutputSelection-> setValueNotifyingHost(stream.readInt());
     gainslider->setValueNotifyingHost(stream.readFloat());
     left_chan_pan->setValueNotifyingHost(left_chan_pan->getNormalisableRange().convertTo0to1(stream.readFloat()));// converting data above float value of 1 to a range of 0-1 so
+   // information can be used by plugin.
     right_chan_pan->setValueNotifyingHost(right_chan_pan->getNormalisableRange().convertTo0to1(stream.readFloat()));// converting data above float value of 1 to a range of 0-1 so
+   // information can be used by plugin.
     polarityleft->setValueNotifyingHost(stream.readBool());
     polarityright->setValueNotifyingHost(stream.readBool());
    
