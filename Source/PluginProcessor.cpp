@@ -27,36 +27,35 @@ MsutilityAudioProcessor::MsutilityAudioProcessor()
     
     //PARAMETERS HERE
     
-    
 
     
-//input selection
+//input selection buttons
     InputSelection = new AudioParameterChoice ("InputSelection", "Input", {"stereo", "Mid-Side"}, 1);
     addParameter(InputSelection);
     
-//Output selection
+//Output selection buttons
     OutputSelection = new AudioParameterChoice ("OutputSelection", "Output", { "stereo", "Mid-Side" }, 1);
     addParameter(OutputSelection);
     
     
     //  following perameters of type float. the arguments within the brackets are as follows: 1. perameter name 2. name shown on plugin, 3. minimum level 4. max level 5. defult level
     
-    //advanced task gain slider
+    //advanced task gain slider creates gain slider in plug in
     gainslider = new AudioParameterFloat ("gainslider", "Gain", 0.0f, 1.0f, 0.5f);
     addParameter(gainslider);
     
-    //advanced task Panner
+    //advanced task Panner creates panning sliders for left and right signals in plugin
     left_chan_pan = new AudioParameterFloat ("left_chan_pan", "PanLeft", -1.0f, 1.0f, 0.0f);
     addParameter(left_chan_pan);
     
     right_chan_pan = new AudioParameterFloat ("right_chan_pan", "PanRight", -1.0f, 1.0f, 0.0f);
     addParameter(right_chan_pan);
     
-    //stereo width perameter
+    //stereo width perameter craetes width slider in plugin
     stereowidth = new AudioParameterFloat ("stereowidth", "stereo width", 0.0f, 2.0f, 1.0f);
     addParameter(stereowidth);
     
-    //advanced task polarity flip
+    //advanced task polarity flip creates phase iversoin buttons for left and right signals
     polarityleft = new AudioParameterBool ("polarityleft", "Inverse Polarity Left", 0);
     addParameter(polarityleft);
 
@@ -182,12 +181,12 @@ void MsutilityAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuff
     auto totalNumInputChannels  = getTotalNumInputChannels();
     auto totalNumOutputChannels = getTotalNumOutputChannels();
     auto currentGain = gainslider-> get();// retrevig gain value from plug in
-    if ( currentGain == previousGain){// if statement to check current gain value matches previous value
-        buffer.applyGain(currentGain);
+    if (currentGain == previousGain){
+        buffer.applyGain(currentGain);// if statement to check current gain value matches previous value
         
     }
     else {
-        buffer.applyGainRamp(0, buffer.getNumSamples(), previousGain, currentGain);
+        buffer.applyGainRamp(0, buffer.getNumSamples(), previousGain, currentGain); //
         
         previousGain = currentGain;
         
@@ -219,12 +218,10 @@ void MsutilityAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuff
     for (int i = 0; i < buffer.getNumSamples(); ++i)
     {
         //Retreving audio from channels
-        
         auto* audioLeft = buffer.getWritePointer (0);
         auto* audioRight = buffer.getWritePointer (1);
         
-        //retreving value from plug-in
-
+        //retreving values from plug-in
         auto InputChoice = InputSelection->getIndex();
         auto OutputChoice = OutputSelection->getIndex();
         auto controlwidth = stereowidth->get();
@@ -233,6 +230,7 @@ void MsutilityAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuff
         int getPolarityleft = polarityleft->get();
         int getPolarityright = polarityright->get();
         
+        //calculating pan possitions, receving them from the plug in
         float pDash = (LeftPan + 1.0) / 2.0;
         float pDash2 = (RightPan + 1.0) / 2.0;
       
@@ -248,12 +246,12 @@ void MsutilityAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuff
             audioRight[i] = side; // Overwriting audio data with side data
          }
         
-        //DECODING EQUATIONS HERE
+        
         //decoding midside
         
         else if (InputChoice == 2 && OutputChoice == 1)
         {
-            
+            //decoding equations
           float midtoleft = (audioLeft[i] + audioRight[i]);
           float sideright = (audioLeft[i] - audioRight[i]);
             
@@ -261,7 +259,7 @@ void MsutilityAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuff
           audioRight[i] = sideright; // Overwriting audio data with side data
     
         }
-        
+        //encoding width parameter
         float wideright = (controlwidth) * (audioLeft[i] - audioRight[i]);
         float wideleft = (2 - controlwidth) * (audioRight[i] + audioLeft[i]);
         

@@ -65,7 +65,6 @@ private:
     AudioParameterFloat* stereowidth;
     AudioParameterChoice* InputSelection;
     AudioParameterChoice* OutputSelection;
-    AudioSampleBuffer delayBuffer;
     AudioParameterFloat* gainslider;
     AudioParameterFloat* left_chan_pan;
     AudioParameterFloat* right_chan_pan;
